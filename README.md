@@ -1,4 +1,4 @@
-                                                Stock Broker Dashboard
+Stock Broker Dashboard
 
 Sign in with your email, subscribe to stocks, and watch prices move in real time with live trend charts and theming.
 
