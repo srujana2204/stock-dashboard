@@ -2,7 +2,7 @@ import React,{ useState } from 'react';
 import { login } from '../api/authApi';
 import { useAuth } from '../context/AuthContext';
 
-export default function LoginForm() {
+export default function LoginForm({ theme, toggleTheme }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -53,6 +53,17 @@ export default function LoginForm() {
 return (
     <div className="app-shell">
       <div className="login-wrapper">
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginBottom: '12px',
+          }}
+        >
+          <button className="logout-button" onClick={toggleTheme}>
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
+        </div>
         <div className="login-header">
           <h1 className="login-title">Stock Broker Dashboard</h1>
           <p className="login-subtitle">

@@ -1,14 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+
 export function useWebSocketPrices(token, subscribedSymbols) {
   const [prices, setPrices] = useState({});
+  const [previousPrices, setPreviousPrices] = useState({});
+  const [history, setHistory] = useState({}); // symbol -> number[]
   const wsRef = useRef(null);
 
   // establish connection when token changes
   useEffect(() => {
     if (!token) return;
 
-    const wsUrl = `ws://localhost:4000/ws?token=${encodeURIComponent(token)}`;
+    const wsProtocol = API_BASE.startsWith('https') ? 'wss' : 'ws';
+    const host = API_BASE.replace(/^https?:\/\//, '');
+    const wsUrl = `${wsProtocol}://${host}/ws?token=${encodeURIComponent(
+      token,
+    )}`;
+
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -22,10 +32,26 @@ export function useWebSocketPrices(token, subscribedSymbols) {
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
       if (msg.type === 'price_update') {
+        const { symbol, price } = msg;
+
+        // store previous price before updating
+        setPreviousPrices((prevPrev) => ({
+          ...prevPrev,
+          [symbol]: prices[symbol],
+        }));
+
+        // current price
         setPrices((prev) => ({
           ...prev,
-          [msg.symbol]: msg.price,
+          [symbol]: price,
         }));
+
+        // history for sparkline (last 60 points)
+        setHistory((prevHist) => {
+          const existing = prevHist[symbol] || [];
+          const updated = [...existing, price].slice(-60);
+          return { ...prevHist, [symbol]: updated };
+        });
       }
     };
 
@@ -40,7 +66,7 @@ export function useWebSocketPrices(token, subscribedSymbols) {
     return () => {
       ws.close();
     };
-  }, [token]);
+  }, [token]); // token only
 
   // when subscribedSymbols change, send subscribe messages
   useEffect(() => {
@@ -52,5 +78,6 @@ export function useWebSocketPrices(token, subscribedSymbols) {
     });
   }, [subscribedSymbols]);
 
-  return prices;
+  // return all three pieces
+  return { prices, previousPrices, history };
 }
